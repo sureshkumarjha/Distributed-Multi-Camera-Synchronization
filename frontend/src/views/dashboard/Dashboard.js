@@ -1,4 +1,4 @@
-import React, { lazy } from 'react'
+import React, { lazy, useState  } from 'react'
 import {
   CBadge,
   CButton,
@@ -10,19 +10,190 @@ import {
   CCol,
   CProgress,
   CRow,
-  CCallout
+  CCallout,
+  CSwitch,
+  CLink,
+  CModal,
+  CModalHeader,
+  CModalTitle,
+  CModalBody,
+  CModalFooter,
+  CForm,CFormGroup,CFormText,CInput,CLabel
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
+import { useSelector, useDispatch } from 'react-redux'
 
 import MainChartExample from '../charts/MainChartExample.js'
+
 
 const WidgetsDropdown = lazy(() => import('../widgets/WidgetsDropdown.js'))
 const WidgetsBrand = lazy(() => import('../widgets/WidgetsBrand.js'))
 
 const Dashboard = () => {
+  const dispatch = useDispatch()
+  const cameraList = useSelector(state => state.cameraList)
+  console.log(cameraList)
+
+  let camera = {
+    camera_name : `Default Camera ${cameraList.length + 1}`,
+    camera_location : "",
+    description: "",
+    show : true,
+    isEntryPoint : false,
+    priority : false,
+    isNew : true,
+  }
+
+  const [selectedCamera ,setSelectedCamera] = useState(camera)
+
+  const [modal, setModal] = useState(false)
+
+  const handleOnChange = event => {
+    const {name , value} = event.target
+    setSelectedCamera({...selectedCamera,[name]:event.target.value})
+  }; 
+
   return (
     <>
       <WidgetsDropdown />
+
+      <CModal 
+        show={modal} 
+        onClose={setModal}
+      >
+        <CModalHeader closeButton>
+          <CModalTitle>Tweak Camera</CModalTitle>
+        </CModalHeader>
+
+        <CModalBody>
+          <CForm action="" method="post">
+
+            <CFormGroup>
+              <CLabel htmlFor="nf-email">Camera Name</CLabel>
+              <CInput  
+              id="camera_name" 
+              name="camera_name" 
+              value ={selectedCamera.camera_name} 
+              placeholder="Camera Name" 
+              onChange = {handleOnChange}
+              />
+              
+            </CFormGroup>
+
+            <CFormGroup>
+              <CLabel htmlFor="nf-password">Camera Location</CLabel>
+              <CInput  
+              id="camera_location" 
+              name="camera_location" 
+              value ={selectedCamera.camera_location} 
+              placeholder="Ip Address/File location" 
+              onChange = {handleOnChange}
+              />
+
+            </CFormGroup>
+          </CForm>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="primary" 
+          onClick = {
+            ()=>{
+              if(selectedCamera.isNew){
+                dispatch({type: 'ADD_CAMERA', payload: {...selectedCamera,isNew:false}})
+              }else{
+                dispatch({type: 'UPDATE_CAMERA', payload: selectedCamera})
+              }
+              setModal(false)
+            }
+          }>
+          Save
+          </CButton>{' '}
+          <CButton 
+            color="secondary" 
+            onClick={() => setModal(false)}
+          >Cancel</CButton>
+        </CModalFooter>
+      </CModal>
+
+      <CRow>
+        <CCol>
+          <CCard>
+            <CCardHeader>
+              Cameras List
+            </CCardHeader>
+            <CCardBody>
+              <CRow>
+                {
+                  cameraList.map((camera,idx)=>{
+                    return <>
+                    <CCol xs="12" sm="6" md="4" lg="3" key = {idx}>
+                      <CCard accentColor="primary">
+                        <CCardHeader>
+                          {camera.camera_name}
+                          <div className="card-header-actions flex items-center">
+                              <CLink onClick={
+                                () => {
+                                  setSelectedCamera({...camera,camera_index : idx})
+                                  setModal(true)
+                                  }
+                                }  className="mh2 pa0 flex items-center">
+                                <CIcon name="cil-settings" />
+                              </CLink>
+                            <CSwitch 
+                            className={'float-right mb-0'} 
+                            color={'info'} 
+                            checked = {camera.show} 
+                            size={'sm'} 
+                            tabIndex="0" 
+                            onChange={
+                              ()=>{
+                                dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : idx,show : !camera.show}})
+                              }
+                            }
+                            />
+                          </div>
+
+                        </CCardHeader>
+                        <CCardBody>
+                          Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut
+                          laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation
+                          ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat.
+                        </CCardBody>
+                      </CCard>
+                    </CCol>
+                    </>
+                  })
+                }
+                
+                
+              </CRow>
+            </CCardBody>
+            <CCardFooter>
+              <CButton  size="md" color="primary" 
+              onClick = {
+                ()=>{
+                  setSelectedCamera(camera)
+                  setModal(true)
+                }
+              }
+              >+ Add Camera</CButton>
+            </CCardFooter>
+          </CCard>
+        </CCol>
+      </CRow>
+
+      {/* <CCard>
+            <CCardHeader>
+              Normal
+              <small> Form</small>
+            </CCardHeader>
+            <CCardBody>
+              
+            </CCardBody>
+            <CCardFooter>
+              <CButton type="submit" size="sm" color="primary"><CIcon name="cil-scrubber" /> Submit</CButton> <CButton type="reset" size="sm" color="danger"><CIcon name="cil-ban" /> Reset</CButton>
+            </CCardFooter>
+      </CCard> */}
+
       <CCard>
         <CCardBody>
           <CRow>
