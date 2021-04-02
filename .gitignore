@@ -1,7 +1,10 @@
 # See https://help.github.com/ignore-files/ for more about ignoring files.
 
 # dependencies
+/node_modules
+/.vscode
 frontend/node_modules
+frontend/.vscode
 frontend/package-lock.json
 
 # testing

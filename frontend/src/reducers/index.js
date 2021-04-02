@@ -34,11 +34,14 @@ const cameraList = (state = [], action ) => {
 		case "ADD_CAMERA":
 			state.push(action.payload)
 			return [...state]
-		case "DELETE_CAMERA":
-			return state
+		case "REMOVE_CAMERA":
+			state.splice(action.payload.camera_index,1)
+			return [...state]
 		case "UPDATE_CAMERA":
 			state[action.payload.camera_index] = action.payload
 			return [...state]
+		case "SET_CAMERA":
+			return [...action.payload]
 		default:
 			return state
 	}

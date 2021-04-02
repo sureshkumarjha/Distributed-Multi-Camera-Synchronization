@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState , useEffect   } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CButton,
@@ -14,11 +14,67 @@ import {
   CInputGroupText,
   CRow
 } from '@coreui/react'
+import { useSelector, useDispatch} from 'react-redux'
+import {loginAction} from '../../../actions'
 import CIcon from '@coreui/icons-react'
+import logo from '../../../assets/images/logo.png'
+
+import axios from 'axios'
 
 
 const Login = (props) => {
-  console.log(props)
+  const dispatch = useDispatch()
+
+  const [user,setUser] = useState({
+    userName : "",
+    password : "",
+  })
+
+  const [error,setError] = useState("")
+
+  const handleOnChange = (e) =>{
+    const { name ,value } = e.target
+    setUser({...user,[name]: value})
+    setError("")
+  }
+
+  const onLogin = () =>{
+
+    if(user.userName === "" || user.password === ""){
+      setError("Enter details")
+    }else{
+      setError("")
+      axios.post("/login",user).then(
+        (res)=>{
+          console.log(res)
+          if(res.data.loginStatus){
+            dispatch(loginAction(user))
+            dispatch( {type: 'SET_CAMERA', payload: res.data.camera_list } )
+          }else{
+            setError("Invalid credentials")
+          }
+        }
+      ) .catch(function (error) {
+        // handle error
+        setError("Error Occured")
+        console.log(error);
+      })
+      
+    }
+  }
+  // useEffect(()=>{
+
+  //   axios.get("/test").then(
+  //     (res)=>{
+  //       console.log(res)
+  //     }
+  //   ) .catch(function (error) {
+  //     // handle error
+  //     console.log(error);
+  //   })
+
+  // })
+
   return (
     <div className="c-app c-default-layout flex-row align-items-center">
       <CContainer>
@@ -36,7 +92,13 @@ const Login = (props) => {
                           <CIcon name="cil-user" />
                         </CInputGroupText>
                       </CInputGroupPrepend>
-                      <CInput type="text" placeholder="Username" autoComplete="username" />
+                      <CInput type="text" 
+                      placeholder="Username" 
+                      name= "userName" 
+                      autoComplete="username" 
+                      value = {user.userName}
+                        onChange={handleOnChange}
+                      />
                     </CInputGroup>
                     <CInputGroup className="mb-4">
                       <CInputGroupPrepend>
@@ -44,20 +106,26 @@ const Login = (props) => {
                           <CIcon name="cil-lock-locked" />
                         </CInputGroupText>
                       </CInputGroupPrepend>
-                      <CInput type="password" placeholder="Password" autoComplete="current-password" />
+                      <CInput type="password" 
+                      placeholder="Password" 
+                      autoComplete="current-password" 
+                      name = "password"
+                      value = {user.password}
+                      onChange = {handleOnChange}
+                      />
                     </CInputGroup>
                     <CRow>
                       <CCol xs="6">
                         <CButton 
                           color="primary" 
                           className="px-4"
-                          onClick={props.onLogin}
+                          onClick={onLogin}
                           >
                           Login
                           </CButton>
                       </CCol>
                       <CCol xs="6" className="text-right">
-                        <CButton color="link" className="px-0">Forgot password?</CButton>
+                        <span className="red">{error}</span>
                       </CCol>
                     </CRow>
                   </CForm>
@@ -66,12 +134,7 @@ const Login = (props) => {
               <CCard className="text-white bg-primary py-5 d-md-down-none" style={{ width: '44%' }}>
                 <CCardBody className="text-center">
                   <div>
-                    <h2>Sign up</h2>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut
-                      labore et dolore magna aliqua.</p>
-                    <Link to="/register">
-                      <CButton color="primary" className="mt-3" active tabIndex={-1}>Register Now!</CButton>
-                    </Link>
+                  <img src={logo}/>
                   </div>
                 </CCardBody>
               </CCard>

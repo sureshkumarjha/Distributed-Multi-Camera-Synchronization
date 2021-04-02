@@ -18,13 +18,14 @@ import {
   CModalTitle,
   CModalBody,
   CModalFooter,
-  CForm,CFormGroup,CFormText,CInput,CLabel
+  CForm,CFormGroup,CFormText,CInput,CLabel, CCardImg,
+  CToast,CToastBody,CToastHeader,CToaster,
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import { useSelector, useDispatch } from 'react-redux'
-
+import axios from 'axios'
 import MainChartExample from '../charts/MainChartExample.js'
-
+import logo from '../../assets/images/logo.png'
 
 const WidgetsDropdown = lazy(() => import('../widgets/WidgetsDropdown.js'))
 const WidgetsBrand = lazy(() => import('../widgets/WidgetsBrand.js'))
@@ -32,7 +33,6 @@ const WidgetsBrand = lazy(() => import('../widgets/WidgetsBrand.js'))
 const Dashboard = () => {
   const dispatch = useDispatch()
   const cameraList = useSelector(state => state.cameraList)
-  console.log(cameraList)
 
   let camera = {
     camera_name : `Default Camera ${cameraList.length + 1}`,
@@ -50,8 +50,129 @@ const Dashboard = () => {
 
   const handleOnChange = event => {
     const {name , value} = event.target
-    setSelectedCamera({...selectedCamera,[name]:event.target.value})
+    setSelectedCamera({...selectedCamera,[name]:event.target.value })
   }; 
+
+  const onAddCamera = () =>{
+    axios.post("/react_add_camera",{ "camInfo" : {...selectedCamera,isNew:false} }).then(
+      (res)=>{
+        console.log(res.data)
+        if(res.data.status){
+          dispatch({type: 'ADD_CAMERA', payload: {...selectedCamera,isNew:false}})
+          addToast(
+            { position: 'bottom-left', 
+            autohide: 3000 ,
+            header: "Notification", 
+            msg : "Camera Added"}
+            )
+            setModal(false)
+        }else{
+          console.log("not added")
+        }
+      }
+    ).catch(
+      function (error){
+        console.log(error)
+      }
+    )
+  }
+
+  const onUpdateCamera = () =>{
+    dispatch({type: 'UPDATE_CAMERA', payload: selectedCamera})
+  }
+  const onStartCamera = (camera,camID) =>{
+    axios.post("/start_camera",{ "camID" : camID }).then(
+      (res)=>{
+        console.log(res.data)
+        if(res.data.status){
+          dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : camID,show : !camera.show}})
+          // addToast(
+          //   { position: 'bottom-left', 
+          //   autohide: 3000 ,
+          //   header: "Notification", 
+          //   msg : "Camera Added"}
+          //   )
+        }else{
+          console.log("not started")
+        }
+      }
+    ).catch(
+      function (error){
+        console.log(error)
+      }
+    )
+  }
+
+  const onStopCamera = (camera,camID) =>{
+    axios.post("/stop_camera",{ "camID" : camID }).then(
+      (res)=>{
+        console.log(res.data)
+        if(res.data.status){
+          dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : camID,show : !camera.show}})
+          // addToast(
+          //   { position: 'bottom-left', 
+          //   autohide: 3000 ,
+          //   header: "Notification", 
+          //   msg : "Camera Added"}
+          //   )
+        }else{
+          console.log("not started")
+        }
+      }
+    ).catch(
+      function (error){
+        console.log(error)
+      }
+    )
+  }
+
+  const onRemoveCamera = (camera,camID) =>{
+    camID = selectedCamera.camera_index;
+    console.log(camID)
+    axios.post("/react_remove_camera",{ "camID" : camID }).then(
+      (res)=>{
+        console.log(res.data)
+        if(res.data.status){
+          dispatch({type: 'REMOVE_CAMERA', payload: {...selectedCamera,camera_index : camID,show : !camera.show}})
+          addToast(
+            { position: 'bottom-left', 
+            autohide: 3000 ,
+            header: "Notification", 
+            msg : "Camera Removed"}
+            )
+            setModal(false)
+        }else{
+          console.log("not started")
+        }
+      }
+    ).catch(
+      function (error){
+        console.log(error)
+      }
+    )
+  }
+
+
+  const [toasts, setToasts] = useState([
+    // { position: 'bottom-left', autohide: 3000 }
+  ])
+
+  const addToast = (val) => {
+    setToasts([
+      ...toasts, 
+      val
+    ])
+  }
+
+
+  const toasters = (()=>{
+    return toasts.reduce((toasters, toast) => {
+      toasters[toast.position] = toasters[toast.position] || []
+      toasters[toast.position].push(toast)
+      return toasters
+    }, {})
+  })()
+
 
   return (
     <>
@@ -91,6 +212,16 @@ const Dashboard = () => {
               />
 
             </CFormGroup>
+            {
+              (selectedCamera.isNew)?
+              <></>:
+              <CButton color="danger" 
+              onClick = {onRemoveCamera}
+            >
+          Delete
+          </CButton>
+          }
+            
           </CForm>
         </CModalBody>
         <CModalFooter>
@@ -98,9 +229,9 @@ const Dashboard = () => {
           onClick = {
             ()=>{
               if(selectedCamera.isNew){
-                dispatch({type: 'ADD_CAMERA', payload: {...selectedCamera,isNew:false}})
+                onAddCamera()
               }else{
-                dispatch({type: 'UPDATE_CAMERA', payload: selectedCamera})
+                onUpdateCamera()
               }
               setModal(false)
             }
@@ -113,6 +244,33 @@ const Dashboard = () => {
           >Cancel</CButton>
         </CModalFooter>
       </CModal>
+
+        {Object.keys(toasters).map((toasterKey) => (
+          <CToaster
+            position={toasterKey}
+            key={'toaster' + toasterKey}
+          >
+            {
+              toasters[toasterKey].map((toast, key)=>{
+              return(
+                <CToast
+                  key={'toast' + key}
+                  show={true}
+                  autohide={toast.autohide}
+                  fade={toast.fade}
+                >
+                  <CToastHeader closeButton={toast.closeButton}>
+                    {toast.header}
+                  </CToastHeader>
+                  <CToastBody>
+                    {toast.msg}
+                  </CToastBody>
+                </CToast>
+              )
+            })
+            }
+          </CToaster>
+        ))}
 
       <CRow>
         <CCol>
@@ -146,7 +304,11 @@ const Dashboard = () => {
                             tabIndex="0" 
                             onChange={
                               ()=>{
-                                dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : idx,show : !camera.show}})
+                                if(camera.show === true){
+                                    onStopCamera(camera,idx)
+                                }else{
+                                    onStartCamera(camera,idx)
+                                }
                               }
                             }
                             />
@@ -154,9 +316,13 @@ const Dashboard = () => {
 
                         </CCardHeader>
                         <CCardBody>
-                          Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut
-                          laoreet dolore magna aliquam erat volutpat. Ut wisi enim ad minim veniam, quis nostrud exerci tation
-                          ullamcorper suscipit lobortis nisl ut aliquip ex ea commodo consequat.
+                        {
+                          (camera.show)?
+                          <img src={`/video_streamer/${idx.toString()}`} />
+                          :
+                          <img src={logo} />
+                        }
+                        
                         </CCardBody>
                       </CCard>
                     </CCol>
