@@ -26,13 +26,27 @@ import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios'
 import MainChartExample from '../charts/MainChartExample.js'
 import logo from '../../assets/images/logo.png'
+import socketIOClient from "socket.io-client";
+
 
 const WidgetsDropdown = lazy(() => import('../widgets/WidgetsDropdown.js'))
 const WidgetsBrand = lazy(() => import('../widgets/WidgetsBrand.js'))
 
+
+const ENDPOINT = "http://localhost:5000/surveillance";
+
 const Dashboard = () => {
   const dispatch = useDispatch()
   const cameraList = useSelector(state => state.cameraList)
+  
+  // const socket = socketIOClient(ENDPOINT);
+  // console.log(socket)
+  // socket.on("system_data", data => {
+  //   console.log(data)
+  // });
+  // socket.on("system_monitoring", data => {
+  //   console.log(data)
+  // });
 
   let camera = {
     camera_name : `Default Camera ${cameraList.length + 1}`,
@@ -52,6 +66,12 @@ const Dashboard = () => {
     const {name , value} = event.target
     setSelectedCamera({...selectedCamera,[name]:event.target.value })
   }; 
+
+  const onView = (idx) =>{
+    console.log("Clicked")
+    setSelectedCamera({...cameraList[idx],camera_index : idx})
+    setModal(true)
+  }
 
   const onAddCamera = () =>{
     axios.post("/react_add_camera",{ "camInfo" : {...selectedCamera,isNew:false} }).then(
@@ -173,77 +193,80 @@ const Dashboard = () => {
     }, {})
   })()
 
-
+  console.log(cameraList)
   return (
     <>
       <WidgetsDropdown />
+      {
+        (modal)?
+        <div className="custom-modal">
+        <CCard>
+            <CCardHeader style = {{ 
+              height: "7vh",
+              display:"flex",
+              alignItems:"center",
+              justifyContent:"space-between"
+              }}>
+              {selectedCamera.camera_name}
+              <div className="card-header-actions flex items-center">
+              <CButton variant="outline" color="dark" onClick = {()=>{
+                setModal(false)
+              }}>
+              <CIcon name="cil-x" />
+              </CButton>
+              </div>
+            </CCardHeader>
+          <CCardBody style = {{
+            height: "92vh",
+            display:"flex",
+            alignItems:"center",
+            justifyContent:"center",
+            }}>
+            {
+              (selectedCamera.show && modal)?
+              <img src={`/video_streamer/${selectedCamera.camera_index}`} style={{
+                height:"100%"
+              }} />
+              :
+              <img src={logo} style={{
+                height:"100%"
+              }}/>
+            }
+          </CCardBody>
+        </CCard>
+      </div>
+      :
+      <></>
+      }
 
-      <CModal 
+      {/* <CModal 
         show={modal} 
         onClose={setModal}
+        size="xl"
+        className = "full-screen-modal"
+        style={{color:"red"}}
+        scrollable = {false}
+        centered={false}
       >
         <CModalHeader closeButton>
-          <CModalTitle>Tweak Camera</CModalTitle>
+          <CModalTitle>{selectedCamera.camera_name}</CModalTitle>
         </CModalHeader>
-
+        {
+          (selectedCamera.show && modal)?
+          <img src={`/video_streamer/${selectedCamera.camera_index}`} />
+          :
+          <img src={logo} />
+        }
         <CModalBody>
-          <CForm action="" method="post">
-
-            <CFormGroup>
-              <CLabel htmlFor="nf-email">Camera Name</CLabel>
-              <CInput  
-              id="camera_name" 
-              name="camera_name" 
-              value ={selectedCamera.camera_name} 
-              placeholder="Camera Name" 
-              onChange = {handleOnChange}
-              />
-              
-            </CFormGroup>
-
-            <CFormGroup>
-              <CLabel htmlFor="nf-password">Camera Location</CLabel>
-              <CInput  
-              id="camera_location" 
-              name="camera_location" 
-              value ={selectedCamera.camera_location} 
-              placeholder="Ip Address/File location" 
-              onChange = {handleOnChange}
-              />
-
-            </CFormGroup>
-            {
-              (selectedCamera.isNew)?
-              <></>:
-              <CButton color="danger" 
-              onClick = {onRemoveCamera}
-            >
-          Delete
-          </CButton>
-          }
-            
-          </CForm>
+          
         </CModalBody>
         <CModalFooter>
-          <CButton color="primary" 
-          onClick = {
-            ()=>{
-              if(selectedCamera.isNew){
-                onAddCamera()
-              }else{
-                onUpdateCamera()
-              }
-              setModal(false)
-            }
-          }>
-          Save
-          </CButton>{' '}
           <CButton 
             color="secondary" 
             onClick={() => setModal(false)}
-          >Cancel</CButton>
+          >Close</CButton>
         </CModalFooter>
-      </CModal>
+      </CModal> */}
 
         {Object.keys(toasters).map((toasterKey) => (
           <CToaster
@@ -272,93 +295,67 @@ const Dashboard = () => {
           </CToaster>
         ))}
 
-      <CRow>
-        <CCol>
-          <CCard>
-            <CCardHeader>
-              Cameras List
-            </CCardHeader>
-            <CCardBody>
-              <CRow>
-                {
-                  cameraList.map((camera,idx)=>{
-                    return <>
-                    <CCol xs="12" sm="6" md="4" lg="3" key = {idx}>
-                      <CCard accentColor="primary">
-                        <CCardHeader>
-                          {camera.camera_name}
-                          <div className="card-header-actions flex items-center">
-                              <CLink onClick={
-                                () => {
-                                  setSelectedCamera({...camera,camera_index : idx})
-                                  setModal(true)
-                                  }
-                                }  className="mh2 pa0 flex items-center">
-                                <CIcon name="cil-settings" />
-                              </CLink>
-                            <CSwitch 
-                            className={'float-right mb-0'} 
-                            color={'info'} 
-                            checked = {camera.show} 
-                            size={'sm'} 
-                            tabIndex="0" 
-                            onChange={
-                              ()=>{
-                                if(camera.show === true){
-                                    onStopCamera(camera,idx)
-                                }else{
-                                    onStartCamera(camera,idx)
-                                }
-                              }
-                            }
-                            />
-                          </div>
+      <br />
 
-                        </CCardHeader>
-                        <CCardBody>
-                        {
-                          (camera.show)?
-                          <img src={`/video_streamer/${idx.toString()}`} />
-                          :
-                          <img src={logo} />
-                        }
-                        
-                        </CCardBody>
-                      </CCard>
-                    </CCol>
-                    </>
-                  })
-                }
-                
-                
-              </CRow>
-            </CCardBody>
-            <CCardFooter>
-              <CButton  size="md" color="primary" 
-              onClick = {
-                ()=>{
-                  setSelectedCamera(camera)
-                  setModal(true)
-                }
-              }
-              >+ Add Camera</CButton>
-            </CCardFooter>
-          </CCard>
-        </CCol>
-      </CRow>
+    <table className="table table-hover table-outline mb-0 d-none d-sm-table">
+      <thead className="thead-light">
+        <tr>
+          <th className="text-center"><CIcon name="cil-people" /></th>
+          <th>Camera</th>
+          <th className="text-center">Location</th>
+          <th>Activity</th>
+          <th className="text-center">Status</th>
+          <th className="text-center">View</th>
+        </tr>
+      </thead>
+      <tbody>
+      {cameraList.map((camera,idx)=>{
+        return <tr>
+          <td className="text-center">
+            <div className="c-avatar">
+              <img src={logo} className="c-avatar-img" alt="admin@bootstrapmaster.com" />
+              {(camera.show)? <span className="c-avatar-status bg-success"> </span> : <> </> }
+            </div>
+          </td>
+          <td>
+            <div>{camera.camera_name}</div>
+            <div className="small text-muted">
+              <span>New</span> | Registered: Jan 1, 2015
+            </div>
+          </td>
+          <td className="text-center">
+          {camera.camera_location}
+          </td>
+          <td>
+            <div className="clearfix">
+              <div className="float-left">
+                <strong>50%</strong>
+              </div>
+              <div className="float-right">
+                <small className="text-muted">Jun 11, 2015 - Jul 10, 2015</small>
+              </div>
+            </div>
+            <CProgress className="progress-xs" color="success" value="50" />
+          </td>
+          <td className="text-center">
+            {(camera.show)? <CIcon name="cil-check" />: <CIcon name="cil-x" /> }
+          </td>
+          <td className="text-center" >
+          <CButton 
+          block shape="pill" 
+          color="info"
+          onClick = {
+            ()=> {onView(idx)}
+          }
+          >View</CButton>
+          </td>
+        </tr>  
+        })
+      }
+      </tbody>
+    </table>
 
-      {/* <CCard>
-            <CCardHeader>
-              Normal
-              <small> Form</small>
-            </CCardHeader>
-            <CCardBody>
-              
-            </CCardBody>
-            <CCardFooter>
-              <CButton type="submit" size="sm" color="primary"><CIcon name="cil-scrubber" /> Submit</CButton> <CButton type="reset" size="sm" color="danger"><CIcon name="cil-ban" /> Reset</CButton>
-            </CCardFooter>
-      </CCard> */}
+    <br />
 
       <CCard>
         <CCardBody>
@@ -655,233 +652,7 @@ const Dashboard = () => {
                 </CCol>
               </CRow>
 
-              <br />
 
-              <table className="table table-hover table-outline mb-0 d-none d-sm-table">
-                <thead className="thead-light">
-                  <tr>
-                    <th className="text-center"><CIcon name="cil-people" /></th>
-                    <th>User</th>
-                    <th className="text-center">Country</th>
-                    <th>Usage</th>
-                    <th className="text-center">Payment Method</th>
-                    <th>Activity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="text-center">
-                      <div className="c-avatar">
-                        <img src={'avatars/1.jpg'} className="c-avatar-img" alt="admin@bootstrapmaster.com" />
-                        <span className="c-avatar-status bg-success"></span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>Yiorgos Avraamu</div>
-                      <div className="small text-muted">
-                        <span>New</span> | Registered: Jan 1, 2015
-                      </div>
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cif-us" title="us" id="us" />
-                    </td>
-                    <td>
-                      <div className="clearfix">
-                        <div className="float-left">
-                          <strong>50%</strong>
-                        </div>
-                        <div className="float-right">
-                          <small className="text-muted">Jun 11, 2015 - Jul 10, 2015</small>
-                        </div>
-                      </div>
-                      <CProgress className="progress-xs" color="success" value="50" />
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cib-cc-mastercard" />
-                    </td>
-                    <td>
-                      <div className="small text-muted">Last login</div>
-                      <strong>10 sec ago</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center">
-                      <div className="c-avatar">
-                        <img src={'avatars/2.jpg'} className="c-avatar-img" alt="admin@bootstrapmaster.com" />
-                        <span className="c-avatar-status bg-danger"></span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>Avram Tarasios</div>
-                      <div className="small text-muted">
-
-                        <span>Recurring</span> | Registered: Jan 1, 2015
-                      </div>
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cif-br" title="br" id="br" />
-                    </td>
-                    <td>
-                      <div className="clearfix">
-                        <div className="float-left">
-                          <strong>10%</strong>
-                        </div>
-                        <div className="float-right">
-                          <small className="text-muted">Jun 11, 2015 - Jul 10, 2015</small>
-                        </div>
-                      </div>
-                      <CProgress className="progress-xs" color="info" value="10" />
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cib-cc-visa" />
-                    </td>
-                    <td>
-                      <div className="small text-muted">Last login</div>
-                      <strong>5 minutes ago</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center">
-                      <div className="c-avatar">
-                        <img src={'avatars/3.jpg'} className="c-avatar-img" alt="admin@bootstrapmaster.com" />
-                        <span className="c-avatar-status bg-warning"></span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>Quintin Ed</div>
-                      <div className="small text-muted">
-                        <span>New</span> | Registered: Jan 1, 2015
-                      </div>
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cif-in" title="in" id="in" />
-                    </td>
-                    <td>
-                      <div className="clearfix">
-                        <div className="float-left">
-                          <strong>74%</strong>
-                        </div>
-                        <div className="float-right">
-                          <small className="text-muted">Jun 11, 2015 - Jul 10, 2015</small>
-                        </div>
-                      </div>
-                      <CProgress className="progress-xs" color="warning" value="74" />
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cib-stripe" />
-                    </td>
-                    <td>
-                      <div className="small text-muted">Last login</div>
-                      <strong>1 hour ago</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center">
-                      <div className="c-avatar">
-                        <img src={'avatars/4.jpg'} className="c-avatar-img" alt="admin@bootstrapmaster.com" />
-                        <span className="c-avatar-status bg-secondary"></span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>Enéas Kwadwo</div>
-                      <div className="small text-muted">
-                        <span>New</span> | Registered: Jan 1, 2015
-                      </div>
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cif-fr" title="fr" id="fr" />
-                    </td>
-                    <td>
-                      <div className="clearfix">
-                        <div className="float-left">
-                          <strong>98%</strong>
-                        </div>
-                        <div className="float-right">
-                          <small className="text-muted">Jun 11, 2015 - Jul 10, 2015</small>
-                        </div>
-                      </div>
-                      <CProgress className="progress-xs" color="danger" value="98" />
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cib-paypal" />
-                    </td>
-                    <td>
-                      <div className="small text-muted">Last login</div>
-                      <strong>Last month</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center">
-                      <div className="c-avatar">
-                        <img src={'avatars/5.jpg'} className="c-avatar-img" alt="admin@bootstrapmaster.com" />
-                        <span className="c-avatar-status bg-success"></span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>Agapetus Tadeáš</div>
-                      <div className="small text-muted">
-                        <span>New</span> | Registered: Jan 1, 2015
-                      </div>
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cif-es" title="es" id="es" />
-                    </td>
-                    <td>
-                      <div className="clearfix">
-                        <div className="float-left">
-                          <strong>22%</strong>
-                        </div>
-                        <div className="float-right">
-                          <small className="text-muted">Jun 11, 2015 - Jul 10, 2015</small>
-                        </div>
-                      </div>
-                      <CProgress className="progress-xs" color="info" value="22" />
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cib-google-pay"/>
-                    </td>
-                    <td>
-                      <div className="small text-muted">Last login</div>
-                      <strong>Last week</strong>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="text-center">
-                      <div className="c-avatar">
-                        <img src={'avatars/6.jpg'} className="c-avatar-img" alt="admin@bootstrapmaster.com" />
-                        <span className="c-avatar-status bg-danger"></span>
-                      </div>
-                    </td>
-                    <td>
-                      <div>Friderik Dávid</div>
-                      <div className="small text-muted">
-                        <span>New</span> | Registered: Jan 1, 2015
-                      </div>
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cif-pl" title="pl" id="pl" />
-                    </td>
-                    <td>
-                      <div className="clearfix">
-                        <div className="float-left">
-                          <strong>43%</strong>
-                        </div>
-                        <div className="float-right">
-                          <small className="text-muted">Jun 11, 2015 - Jul 10, 2015</small>
-                        </div>
-                      </div>
-                      <CProgress className="progress-xs" color="success" value="43" />
-                    </td>
-                    <td className="text-center">
-                      <CIcon height={25} name="cib-cc-amex" />
-                    </td>
-                    <td>
-                      <div className="small text-muted">Last login</div>
-                      <strong>Yesterday</strong>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
 
             </CCardBody>
           </CCard>

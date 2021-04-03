@@ -3,6 +3,7 @@ import { HashRouter, Route, Switch, Redirect} from 'react-router-dom';
 import { useSelector, useDispatch} from 'react-redux'
 import {loginAction } from './actions'
 import './scss/style.scss';
+import './app.css';
 import 'tachyons';
 
 const loading = (
