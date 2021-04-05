@@ -22,6 +22,8 @@ import  {
   CModalFooter,
   CForm,CFormGroup,CFormText,CInput,CLabel, CCardImg,
   CToast,CToastBody,CToastHeader,CToaster,
+  CListGroup,
+  CListGroupItem,
 } from '@coreui/react'
 import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios'
@@ -35,11 +37,14 @@ const Settings = (props) => {
   let camera = {
     camera_name : `Default Camera ${cameraList.length + 1}`,
     camera_location : "",
+    camera_path:"",
     description: "",
     show : true,
+    isProcessing: true,
     isEntryPoint : false,
     priority : false,
     isNew : true,
+    camera_date_time:"",
   }
 
   const [selectedCamera ,setSelectedCamera] = useState(camera)
@@ -76,14 +81,37 @@ const Settings = (props) => {
   }
 
   const onUpdateCamera = () =>{
-    dispatch({type: 'UPDATE_CAMERA', payload: selectedCamera})
-  }
-  const onStartCamera = (camera,camID) =>{
-    axios.post("/start_camera",{ "camID" : camID }).then(
+    axios.post("/react_update_camera",{ "camInfo" : {...selectedCamera,isNew:false},
+    "camID" : selectedCamera.camera_index
+  }).then(
       (res)=>{
         console.log(res.data)
         if(res.data.status){
-          dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : camID,show : !camera.show}})
+          dispatch({type: 'UPDATE_CAMERA', payload: selectedCamera})
+          addToast(
+            { position: 'bottom-left', 
+            autohide: 3000 ,
+            header: "Notification", 
+            msg : "Camera Updated"}
+            )
+            setModal(false)
+        }else{
+          console.log("not added")
+        }
+      }
+    ).catch(
+      function (error){
+        console.log(error)
+      }
+    )
+    
+  }
+  const onStartProcessing = (camera,camID) =>{
+    axios.post("/start_processing",{ "camID" : camID }).then(
+      (res)=>{
+        console.log(res.data)
+        if(res.data.status){
+          dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : camID,show : !camera.show , isProcessing : true}})
           // addToast(
           //   { position: 'bottom-left', 
           //   autohide: 3000 ,
@@ -101,12 +129,12 @@ const Settings = (props) => {
     )
   }
 
-  const onStopCamera = (camera,camID) =>{
-    axios.post("/stop_camera",{ "camID" : camID }).then(
+  const onStopProcessing = (camera,camID) =>{
+    axios.post("/stop_processing",{ "camID" : camID }).then(
       (res)=>{
         console.log(res.data)
         if(res.data.status){
-          dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : camID,show : !camera.show}})
+          dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : camID,show : !camera.show , isProcessing : false}})
           // addToast(
           //   { position: 'bottom-left', 
           //   autohide: 3000 ,
@@ -170,7 +198,7 @@ const Settings = (props) => {
       return toasters
     }, {})
   })()
-
+  console.log("Selected camera",selectedCamera)
   return (
     <div className="flex-row">
       <CContainer>
@@ -178,7 +206,7 @@ const Settings = (props) => {
         <CModal 
         show={modal} 
         onClose={setModal}
-      >
+        >
         <CModalHeader closeButton>
           <CModalTitle>Tweak Camera</CModalTitle>
         </CModalHeader>
@@ -204,11 +232,58 @@ const Settings = (props) => {
               id="camera_location" 
               name="camera_location" 
               value ={selectedCamera.camera_location} 
+              placeholder="Front Gate/Back Gate/Building Enterance" 
+              onChange = {handleOnChange}
+            />
+            </CFormGroup>
+
+            <CFormGroup>
+              <CLabel htmlFor="nf-password">Camera Path</CLabel>
+              <CInput  
+              id="camera_path" 
+              name="camera_path" 
+              value ={selectedCamera.camera_path} 
               placeholder="Ip Address/File location" 
               onChange = {handleOnChange}
+              disabled = {(selectedCamera.isNew) ? false: true}
               />
-
             </CFormGroup>
+            </CForm>
+            <CForm  className="form-horizontal">
+            <CFormGroup row>
+                  <CCol md="3">
+                    <CLabel htmlFor="hf-password">Entry Point</CLabel>
+                  </CCol>
+                  <CCol xs="12" md="9">
+                  <CSwitch className={'mx-1'} variant={'3d'} color={'success'} 
+                    checked = {selectedCamera.isEntryPoint} 
+                    onChange = {
+                      ()=>{
+                        setSelectedCamera({...selectedCamera,isEntryPoint:!selectedCamera.isEntryPoint})
+                      }
+                    }
+                  />
+                    <CFormText className="help-block">Is this Entry point to the surveillance system ? (eg. Entry Gate)</CFormText>
+                  </CCol>
+              </CFormGroup>
+              <CFormGroup row>
+                  <CCol md="3">
+                    <CLabel htmlFor="hf-email">Smart Sense </CLabel>
+                  </CCol>
+                  <CCol xs="12" md="9">
+                  <CSwitch className={'mx-1'} variant={'3d'} color={'success'} 
+                    checked = {selectedCamera.isProcessing} 
+                    onChange = {
+                      ()=>{
+                        setSelectedCamera({...selectedCamera,isProcessing:!selectedCamera.isProcessing})
+                      }
+                    }
+                  />
+                    <CFormText className="help-block">Enable Smart Tracking and Inturter detection on this Camera ?</CFormText>
+                  </CCol>
+                </CFormGroup>
+
+            </CForm>
             {
               (selectedCamera.isNew)?
               <></>:
@@ -219,7 +294,7 @@ const Settings = (props) => {
           </CButton>
           }
             
-          </CForm>
+          
         </CModalBody>
         <CModalFooter>
           <CButton color="primary" 
@@ -271,16 +346,17 @@ const Settings = (props) => {
 
         <CRow className="justify-content-center">
         <CCol>
+        <h3>Cameras Settings</h3>
           <CCard>
-            <CCardHeader>
+            {/* <CCardHeader>
               Cameras Settings
-            </CCardHeader>
+            </CCardHeader> */}
             <CCardBody>
               <CRow>
                 {
                   cameraList.map((camera,idx)=>{
                     return <>
-                    <CCol xs="12" sm="6" md="4" lg="3" key = {idx}>
+                    <CCol xs="12" sm="6" md="4" lg="6" key = {idx}>
                       <CCard accentColor="primary">
                         <CCardHeader>
                           {camera.camera_name}
@@ -296,15 +372,15 @@ const Settings = (props) => {
                             <CSwitch 
                             className={'float-right mb-0'} 
                             color={'info'} 
-                            checked = {camera.show} 
+                            checked = {camera.isProcessing} 
                             size={'sm'} 
                             tabIndex="0" 
                             onChange={
                               ()=>{
-                                if(camera.show === true){
-                                    onStopCamera(camera,idx)
+                                if(camera.isProcessing === true){
+                                    onStopProcessing(camera,idx)
                                 }else{
-                                    onStartCamera(camera,idx)
+                                    onStartProcessing(camera,idx)
                                 }
                               }
                             }
@@ -313,13 +389,9 @@ const Settings = (props) => {
 
                         </CCardHeader>
                         <CCardBody>
-                        {
-                          (camera.show)?
+
                           <img src={`/video_streamer/${idx.toString()}`} />
-                          :
-                          <img src={logo} />
-                        }
-                        
+
                         </CCardBody>
                       </CCard>
                     </CCol>
@@ -334,16 +406,37 @@ const Settings = (props) => {
               <CButton  size="md" color="primary" 
               onClick = {
                 ()=>{
-                  setSelectedCamera(camera)
+                  let d = new Date();
+                  setSelectedCamera({...camera,camera_date_time: d.toDateString() + " " + d.toLocaleTimeString() })
                   setModal(true)
                 }
               }
               >+ Add Camera</CButton>
             </CCardFooter>
           </CCard>
-        </CCol>
-      </CRow>
+          <CCard>
 
+            <CCardBody>
+            <CListGroup>
+                <CListGroupItem className="justify-content-between flex items-center">
+                  Enable Smart Sense for all the cameras
+   
+                  <CSwitch className={'mx-1 float-right'} variant={'3d'} color={'success'} 
+                    // checked = {} 
+                    onChange = {
+                      ()=>{
+                        
+                      }
+                    }
+                  />
+                </CListGroupItem>
+              </CListGroup>
+            </CCardBody>
+
+          </CCard>
+        </CCol>
+      
+        </CRow>
       </CContainer>
     </div>
   )

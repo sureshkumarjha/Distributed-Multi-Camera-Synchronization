@@ -15,6 +15,7 @@ const TheHeaderDropdown = () => {
   const dispatch = useDispatch()
   const onLogOut = () =>{
     dispatch(logoutAction())
+    localStorage.setItem('rememberMe', false)
   }
 
   return (

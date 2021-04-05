@@ -12,7 +12,10 @@ import {
   CInputGroup,
   CInputGroupPrepend,
   CInputGroupText,
-  CRow
+  CRow,
+  CFormGroup,
+  CInputCheckbox,
+  CLabel,
 } from '@coreui/react'
 import { useSelector, useDispatch} from 'react-redux'
 import {loginAction} from '../../../actions'
@@ -28,6 +31,7 @@ const Login = (props) => {
   const [user,setUser] = useState({
     userName : "",
     password : "",
+    remember_me : false
   })
 
   const [error,setError] = useState("")
@@ -49,6 +53,9 @@ const Login = (props) => {
           console.log(res)
           if(res.data.loginStatus){
             dispatch(loginAction(user))
+            
+            localStorage.setItem('rememberMe', user.remember_me)
+
             dispatch( {type: 'SET_CAMERA', payload: res.data.camera_list } )
           }else{
             setError("Invalid credentials")
@@ -62,18 +69,30 @@ const Login = (props) => {
       
     }
   }
-  // useEffect(()=>{
+  useEffect(()=>{
+    console.log(localStorage.getItem('rememberMe'))
+    if(localStorage.getItem('rememberMe') === 'true'){
+      axios.post("/login",{
+        userName : "admin",
+        password : "admin@123",
+      }).then(
+        (res)=>{
+          console.log(res)
+          if(res.data.loginStatus){
+            dispatch(loginAction(user))
 
-  //   axios.get("/test").then(
-  //     (res)=>{
-  //       console.log(res)
-  //     }
-  //   ) .catch(function (error) {
-  //     // handle error
-  //     console.log(error);
-  //   })
+            dispatch( {type: 'SET_CAMERA', payload: res.data.camera_list } )
+          }else{
+            setError("Invalid credentials")
+          }
+        }
+      ) .catch(function (error) {
 
-  // })
+        setError("Error Occured")
+        console.log(error);
+      })
+    }
+  },[])
 
   return (
     <div className="c-app c-default-layout flex-row align-items-center">
@@ -113,6 +132,22 @@ const Login = (props) => {
                       value = {user.password}
                       onChange = {handleOnChange}
                       />
+                    </CInputGroup>
+                    <CInputGroup className="mb-4">
+                    <CFormGroup variant="custom-checkbox" inline>
+                      <CInputCheckbox 
+                        custom 
+                        id="inline-checkbox1" 
+                        name="inline-checkbox1" 
+                        checked ={user.remember_me}
+                        onChange = {
+                          (e)=>{
+                              setUser({...user,remember_me: !user.remember_me})
+                          }
+                        }
+                      />
+                      <CLabel variant="custom-checkbox" htmlFor="inline-checkbox1">Remember me</CLabel>
+                    </CFormGroup>
                     </CInputGroup>
                     <CRow>
                       <CCol xs="6">

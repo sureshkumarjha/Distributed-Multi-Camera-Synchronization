@@ -44,7 +44,7 @@ def user_login():
     if request.method == 'POST':
         session.pop('user',None) # Drops session everytime user tries to login
         print(request.json)
-        if request.json['userName'] != 'admin' or request.json['password'] != 'admin':
+        if request.json['userName'] != 'admin' or request.json['password'] != 'admin@123':
             return { "loginStatus" : False }
         else:
             session['user'] = request.json['userName']
@@ -78,21 +78,21 @@ def react_add_camera():
             return { 'status' : False}
     return { 'status' : False}
 
-@app.route('/start_camera', methods = ['GET','POST'])
-def start_camera():
+@app.route('/start_processing', methods = ['GET','POST'])
+def start_processing():
     if request.method == 'POST':
         camID = request.json.get('camID')
         print(camID)
-        HomeSurveillance.start_camera(camID)
+        HomeSurveillance.start_processing(camID)
         return {"status" : True }
     return {"status" : False }
 
-@app.route('/stop_camera', methods = ['GET','POST'])
-def stop_camera():
+@app.route('/stop_processing', methods = ['GET','POST'])
+def stop_processing():
     if request.method == 'POST':
         camID = request.json.get('camID')
-        print(camID)
-        HomeSurveillance.stop_camera(camID)
+        print("stop_processing",camID)
+        HomeSurveillance.stop_processing(camID)
         return {"status" : True }
     return {"status" : False }
 
@@ -101,10 +101,31 @@ def react_remove_camera():
     try:
         if request.method == 'POST':
             camID = request.json.get('camID')
+            print(camID)
             data = {"camNum": len(HomeSurveillance.cameras) - 1}
             with HomeSurveillance.camerasLock:
                 HomeSurveillance.remove_camera(camID)
+            print("Done Deleted")
             data = {"status": True,"camNum": len(HomeSurveillance.cameras) - 1 }
+            return data
+    except Exception as e:
+        print(e)
+        return {"status": False }
+    return {"status": False }
+
+@app.route('/react_update_camera', methods = ['GET','POST'])
+def react_update_camera():
+    try:
+        if request.method == 'POST':
+            camInfo = request.json.get('camInfo')
+            camID = request.json.get('camID')
+            print(camInfo)
+            HomeSurveillance.cameras[camID].update_camera(camInfo)
+            if camInfo.get("isProcessing") == True:
+                HomeSurveillance.start_processing(camID)
+            else:
+                HomeSurveillance.stop_processing(camID)
+            data = {"status": True }
             return data
     except Exception as e:
         print(e)
@@ -170,8 +191,12 @@ def gen(camera):
     class, you can see all detection bounding boxes. This
     however slows down streaming and therefore read_jpg()
     is recommended"""
-    while True:
-        frame = camera.read_processed()    # read_jpg()  # read_processed()    
+    while camera.isDeleted == False:
+        if(camera.camInfo.get("isProcessing") == True):
+            frame = camera.read_processed()    # read_jpg()  # read_processed()
+        else:
+            frame = camera.read_jpg()
+
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')  # Builds 'jpeg' data with header and payload
 
@@ -186,27 +211,29 @@ def system_monitoring():
     """Pushes system monitoring data to client"""
     while True:
         cameraProcessingFPS = []
-        for camera in HomeSurveillance.cameras:
-    
-            cameraProcessingFPS.append("{0:.2f}".format(camera.processingFPS))
-            #print "FPS: " +str(camera.processingFPS) + " " + str(camera.streamingFPS)
-            app.logger.info("FPS: " +str(camera.processingFPS) + " " + str(camera.streamingFPS))
-        systemState = {'cpu':cpu_usage(),'memory':memory_usage(), 'processingFPS': cameraProcessingFPS}
+        cameraStreamingFPS = []
+        with HomeSurveillance.camerasLock :
+            for camera in HomeSurveillance.cameras:
+                cameraStreamingFPS.append("{0:.2f}".format(camera.streamingFPS))
+                cameraProcessingFPS.append("{0:.2f}".format(camera.processingFPS))
+                #print "FPS: " +str(camera.processingFPS) + " " + str(camera.streamingFPS)
+                app.logger.info("FPS: " +str(camera.processingFPS) + " " + str(camera.streamingFPS))
+        systemState = {'cpu':cpu_usage(),'memory':memory_usage(), 'processingFPS': cameraProcessingFPS, 'streamingFPS' : cameraStreamingFPS }
         socketio.emit('system_monitoring', json.dumps(systemState) ,namespace='/surveillance')
-        time.sleep(3)
+        time.sleep(10)
 
 def cpu_usage():
       psutil.cpu_percent(interval=1, percpu=False) #ignore first call - often returns 0
       time.sleep(0.12)
       cpu_load = psutil.cpu_percent(interval=1, percpu=False)
       #print "CPU Load: " + str(cpu_load)
-      app.logger.info("CPU Load: " + str(cpu_load))
+    #   app.logger.info("CPU Load: " + str(cpu_load))
       return cpu_load  
 
 def memory_usage():
      mem_usage = psutil.virtual_memory().percent
      #print "System Memory Usage: " + str( mem_usage)
-     app.logger.info("System Memory Usage: " + str( mem_usage))
+    #  app.logger.info("System Memory Usage: " + str( mem_usage))
      return mem_usage 
 
 @app.route('/add_camera', methods = ['GET','POST'])
@@ -466,7 +493,7 @@ def connect():
             alerts.append(alertData)
    
     systemData = {'camNum': len(HomeSurveillance.cameras) , 'people': HomeSurveillance.peopleDB, 'cameras': cameras, 'alerts': alerts, 'onConnect': True}
-    socketio.emit('system_data', json.dumps(systemData) ,namespace='/surveillance')
+    socketio.emit('system_data', systemData ,namespace='/surveillance')
 
 @socketio.on('disconnect', namespace='/surveillance')
 def disconnect():
@@ -477,15 +504,15 @@ def disconnect():
 if __name__ == '__main__':
      print("Loaded")
      # Starts server on default port 5000 and makes socket connection available to other hosts (host = '0.0.0.0')
-     formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-     handler = RotatingFileHandler(LOG_FILE, maxBytes=1000000, backupCount=10)
-     handler.setLevel(logging.DEBUG)
-     handler.setFormatter(formatter)
-     app.logger.addHandler(handler)
+    #  formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    #  handler = RotatingFileHandler(LOG_FILE, maxBytes=1000000, backupCount=10)
+    #  handler.setLevel(logging.DEBUG)
+    #  handler.setFormatter(formatter)
+    #  app.logger.addHandler(handler)
      app.logger.setLevel(logging.DEBUG)
 
-     log = logging.getLogger('werkzeug')
-     log.setLevel(logging.DEBUG)
-     log.addHandler(handler)
+    #  log = logging.getLogger('werkzeug')
+    #  log.setLevel(logging.DEBUG)
+    #  log.addHandler(handler)
      socketio.run(app,host="0.0.0.0", debug=True) 
     

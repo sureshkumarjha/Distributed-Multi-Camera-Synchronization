@@ -46,7 +46,7 @@ class IPCamera(object):
 		# self.motionDetector = MotionDetector.MotionDetector()
 		# self.faceDetector = FaceDetector.FaceDetector()
 		self.camInfo = camInfo
-		self.camURL = camInfo.get("camera_location")
+		self.camURL = camInfo.get("camera_path")
 		print(self.camURL)
 		max_cosine_distance = 0.4
 		nn_budget = None
@@ -86,12 +86,15 @@ class IPCamera(object):
 		self.captureThread.daemon = True
 		self.captureThread.start()
 		self.captureThread.stop = False
+		self.isDeleted = False
 
 	def __del__(self):
 		print("Object deleted")
 		self.video.release()
 
-
+	def update_camera(self,camInfo):
+		self.camInfo = camInfo
+    	
 
 	def get_frame(self):
 		logger.debug('Getting Frames')
@@ -99,8 +102,7 @@ class IPCamera(object):
 		warmup = 0
 		#fpsTweak = 0  # set that to 1 if you want to enable Brandon's fps tweak. that break most video feeds so recommend not to
 		FPSstart = time.time()
-
-		while True:
+		while True :
 			success, frame = self.video.read()
 			self.captureEvent.clear() 
 			if success:		
@@ -112,7 +114,6 @@ class IPCamera(object):
 				break
 
 			FPScount += 1 
-
 			if FPScount == 5:
 				try:
 					self.streamingFPS = 5/(time.time() - FPSstart)
@@ -127,6 +128,11 @@ class IPCamera(object):
 						time.sleep(1/CAPTURE_HZ)
 					else:
 						time.sleep(self.streamingFPS/(CAPTURE_HZ*CAPTURE_HZ))
+			if self.isDeleted:
+    				break
+		self.video.release()
+		print("Video released")
+		self.captureFrame = None
 
 	def read_jpg(self):
 		"""We are using Motion JPEG, and OpenCV captures raw images,
@@ -135,7 +141,10 @@ class IPCamera(object):
 		improve streaming performance"""
 
 		capture_blocker = self.captureEvent.wait()  
-		frame = self.captureFrame 	
+		frame = self.captureFrame
+		while frame is None:
+			frame = self.captureFrame
+
 		#frame = ImageUtils.resize_mjpeg(frame)
 		ret, jpeg = cv2.imencode('.jpg', frame)
 		return jpeg.tostring()

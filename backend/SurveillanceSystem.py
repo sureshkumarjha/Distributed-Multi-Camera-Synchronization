@@ -175,44 +175,51 @@ class SurveillanceSystem(object):
         """Adds new camera to the System and generates a 
         frame processing thread"""
         self.cameras.append(camera)
-        thread = threading.Thread(name='frame_process_thread_' + 
-                                 str(len(self.cameras)),
-                                 target=self.process_frame,
-                                 args=(self.cameras[-1],self.q))
-        thread.daemon = False
-        self.cameraProcessingThreads.append(thread)
-        # self.start_camera(len(self.cameras)-1)
-        thread.start()
+        if camera.camInfo.get("isProcessing") == True :
+            thread = threading.Thread(name='frame_process_thread_' + 
+                                    str(len(self.cameras)),
+                                    target=self.process_frame,
+                                    args=(self.cameras[-1],self.q))
+            thread.daemon = False
+            self.cameraProcessingThreads.append(thread)
+            # self.start_camera(len(self.cameras)-1)
+            thread.start()
+        else:
+            self.cameras[-1].captureThread.stop = True
+            self.cameras[-1].camInfo['show'] = False 
 
    def remove_camera(self, camID):
         """remove a camera to the System and kill its processing thread"""
         self.cameras[camID].captureThread.stop = True 
+        self.cameras[camID].isDeleted = True 
         cam = self.cameras.pop(camID)
+
         print(cam)
-        cam.video.release()
+        # cam.video.release()
         del cam
         self.cameraProcessingThreads.pop(camID)
         print("Camera Deleted ")
 
-   def start_camera(self,camID):
+   def start_processing(self,camID):
         if self.cameras[camID].captureThread.stop == True:
-            print("camera started")
+            print("Start Camera processing")
             thread = threading.Thread(name='frame_process_thread_' + 
                                  str(camID),
                                  target=self.process_frame,
                                  args=(self.cameras[camID],self.q))
             thread.daemon = False
-            self.cameraProcessingThreads[camID] = thread 
-            self.cameras[camID].captureThread.stop = False 
+            self.cameraProcessingThreads.append(thread)
+            self.cameras[camID].captureThread.stop = False
+            self.cameras[camID].camInfo['isProcessing'] = True 
             print(self.cameras[camID].camInfo)
             self.cameras[camID].camInfo['show'] = True
-
             thread.start()
 
 
-   def stop_camera(self,camID):
-        print("Camera Stopped")
+   def stop_processing(self,camID):
+        print("Stop Camera processing")
         self.cameras[camID].captureThread.stop = True 
+        self.cameras[camID].camInfo['isProcessing'] = False
         print(self.cameras[camID].camInfo)
         self.cameras[camID].camInfo['show'] = False 
 
@@ -249,7 +256,7 @@ class SurveillanceSystem(object):
             image_data = cv2.resize(frame, (input_size, input_size))
             image_data = image_data / 255.
             image_data = image_data[np.newaxis, ...].astype(np.float32)
-            start_time = time.time()
+            # start_time = time.time()
 
 
             # # bounding_boxes, conf, landmarks = mtcnn.detect(image, landmarks=True)
@@ -370,7 +377,6 @@ class SurveillanceSystem(object):
             # for track in tracker.tracks:
             #     if not track.is_confirmed() or track.time_since_update > 1:
             #         continue 
-            #     print(track.features,track.track_id,track.name,track.state)
             #     bbox = track.to_tlbr()
             #     class_name = track.get_class()
                 
@@ -382,7 +388,7 @@ class SurveillanceSystem(object):
             #     cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
             #     cv2.putText(frame, class_name + "-" + str(track.track_id)+ "-" +str(track.name),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
 
-            # calculate frames per second of running detections
+            # #calculate frames per second of running detections
             # fps = 1.0 / (time.time() - start_time)
             fps = 30
             # print("Frame_Count",frame_num)
@@ -390,7 +396,7 @@ class SurveillanceSystem(object):
             result = np.asarray(frame)
             result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             camera.processing_frame = result
-
+            camera.processingFPS = fps
             stop = camera.captureThread.stop
             
             

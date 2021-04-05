@@ -11,6 +11,7 @@ import {
   CProgress,
   CRow,
   CCallout,
+  CCardGroup,
   CSwitch,
   CLink,
   CModal,
@@ -21,41 +22,40 @@ import {
   CForm,CFormGroup,CFormText,CInput,CLabel, CCardImg,
   CToast,CToastBody,CToastHeader,CToaster,
 } from '@coreui/react'
+import {
+  CChartPie,
+  CChartDoughnut
+} from '@coreui/react-chartjs'
 import CIcon from '@coreui/icons-react'
 import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios'
 import MainChartExample from '../charts/MainChartExample.js'
 import logo from '../../assets/images/logo.png'
-import socketIOClient from "socket.io-client";
+
 
 
 const WidgetsDropdown = lazy(() => import('../widgets/WidgetsDropdown.js'))
 const WidgetsBrand = lazy(() => import('../widgets/WidgetsBrand.js'))
 
 
-const ENDPOINT = "http://localhost:5000/surveillance";
+
 
 const Dashboard = () => {
   const dispatch = useDispatch()
   const cameraList = useSelector(state => state.cameraList)
+  const system_monitoring = useSelector(state => state.system_monitoring)
   
-  // const socket = socketIOClient(ENDPOINT);
-  // console.log(socket)
-  // socket.on("system_data", data => {
-  //   console.log(data)
-  // });
-  // socket.on("system_monitoring", data => {
-  //   console.log(data)
-  // });
-
   let camera = {
     camera_name : `Default Camera ${cameraList.length + 1}`,
     camera_location : "",
+    camera_path:"",
     description: "",
     show : true,
+    isProcessing: true,
     isEntryPoint : false,
     priority : false,
     isNew : true,
+    camera_date_time:"",
   }
 
   const [selectedCamera ,setSelectedCamera] = useState(camera)
@@ -72,106 +72,6 @@ const Dashboard = () => {
     setSelectedCamera({...cameraList[idx],camera_index : idx})
     setModal(true)
   }
-
-  const onAddCamera = () =>{
-    axios.post("/react_add_camera",{ "camInfo" : {...selectedCamera,isNew:false} }).then(
-      (res)=>{
-        console.log(res.data)
-        if(res.data.status){
-          dispatch({type: 'ADD_CAMERA', payload: {...selectedCamera,isNew:false}})
-          addToast(
-            { position: 'bottom-left', 
-            autohide: 3000 ,
-            header: "Notification", 
-            msg : "Camera Added"}
-            )
-            setModal(false)
-        }else{
-          console.log("not added")
-        }
-      }
-    ).catch(
-      function (error){
-        console.log(error)
-      }
-    )
-  }
-
-  const onUpdateCamera = () =>{
-    dispatch({type: 'UPDATE_CAMERA', payload: selectedCamera})
-  }
-  const onStartCamera = (camera,camID) =>{
-    axios.post("/start_camera",{ "camID" : camID }).then(
-      (res)=>{
-        console.log(res.data)
-        if(res.data.status){
-          dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : camID,show : !camera.show}})
-          // addToast(
-          //   { position: 'bottom-left', 
-          //   autohide: 3000 ,
-          //   header: "Notification", 
-          //   msg : "Camera Added"}
-          //   )
-        }else{
-          console.log("not started")
-        }
-      }
-    ).catch(
-      function (error){
-        console.log(error)
-      }
-    )
-  }
-
-  const onStopCamera = (camera,camID) =>{
-    axios.post("/stop_camera",{ "camID" : camID }).then(
-      (res)=>{
-        console.log(res.data)
-        if(res.data.status){
-          dispatch({type: 'UPDATE_CAMERA', payload: {...camera,camera_index : camID,show : !camera.show}})
-          // addToast(
-          //   { position: 'bottom-left', 
-          //   autohide: 3000 ,
-          //   header: "Notification", 
-          //   msg : "Camera Added"}
-          //   )
-        }else{
-          console.log("not started")
-        }
-      }
-    ).catch(
-      function (error){
-        console.log(error)
-      }
-    )
-  }
-
-  const onRemoveCamera = (camera,camID) =>{
-    camID = selectedCamera.camera_index;
-    console.log(camID)
-    axios.post("/react_remove_camera",{ "camID" : camID }).then(
-      (res)=>{
-        console.log(res.data)
-        if(res.data.status){
-          dispatch({type: 'REMOVE_CAMERA', payload: {...selectedCamera,camera_index : camID,show : !camera.show}})
-          addToast(
-            { position: 'bottom-left', 
-            autohide: 3000 ,
-            header: "Notification", 
-            msg : "Camera Removed"}
-            )
-            setModal(false)
-        }else{
-          console.log("not started")
-        }
-      }
-    ).catch(
-      function (error){
-        console.log(error)
-      }
-    )
-  }
-
 
   const [toasts, setToasts] = useState([
     // { position: 'bottom-left', autohide: 3000 }
@@ -193,7 +93,7 @@ const Dashboard = () => {
     }, {})
   })()
 
-  console.log(cameraList)
+  console.log(cameraList,system_monitoring)
   return (
     <>
       <WidgetsDropdown />
@@ -223,7 +123,7 @@ const Dashboard = () => {
             justifyContent:"center",
             }}>
             {
-              (selectedCamera.show && modal)?
+              (modal)?
               <img src={`/video_streamer/${selectedCamera.camera_index}`} style={{
                 height:"100%"
               }} />
@@ -238,35 +138,6 @@ const Dashboard = () => {
       :
       <></>
       }
-
-      {/* <CModal 
-        show={modal} 
-        onClose={setModal}
-        size="xl"
-        className = "full-screen-modal"
-        style={{color:"red"}}
-        scrollable = {false}
-        centered={false}
-      >
-        <CModalHeader closeButton>
-          <CModalTitle>{selectedCamera.camera_name}</CModalTitle>
-        </CModalHeader>
-        {
-          (selectedCamera.show && modal)?
-          <img src={`/video_streamer/${selectedCamera.camera_index}`} />
-          :
-          <img src={logo} />
-        }
-        <CModalBody>
-          
-        </CModalBody>
-        <CModalFooter>
-          <CButton 
-            color="secondary" 
-            onClick={() => setModal(false)}
-          >Close</CButton>
-        </CModalFooter>
-      </CModal> */}
 
         {Object.keys(toasters).map((toasterKey) => (
           <CToaster
@@ -302,10 +173,12 @@ const Dashboard = () => {
         <tr>
           <th className="text-center"><CIcon name="cil-people" /></th>
           <th>Camera</th>
-          <th className="text-center">Location</th>
-          <th>Activity</th>
-          <th className="text-center">Status</th>
-          <th className="text-center">View</th>
+          <th >Camera Location</th>
+          <th >Camera Path</th>
+          <th className="text-center">Fps</th>
+          <th className="text-center">Entry Point</th>
+          <th className="text-center">Smart Sense</th>
+          <th className="text-center">{" "}</th>
         </tr>
       </thead>
       <tbody>
@@ -314,36 +187,49 @@ const Dashboard = () => {
           <td className="text-center">
             <div className="c-avatar">
               <img src={logo} className="c-avatar-img" alt="admin@bootstrapmaster.com" />
-              {(camera.show)? <span className="c-avatar-status bg-success"> </span> : <> </> }
+              {(camera.isProcessing)? <span className="c-avatar-status bg-success"> </span> : <span className="c-avatar-status " style={{ background:"red"}}></span> }
             </div>
           </td>
           <td>
-            <div>{camera.camera_name}</div>
+            <div> 
+            {camera.camera_name}</div>
             <div className="small text-muted">
-              <span>New</span> | Registered: Jan 1, 2015
+              <span>New</span> | {camera.camera_date_time}
             </div>
           </td>
-          <td className="text-center">
-          {camera.camera_location}
+          <td >
+          { camera.camera_location }
           </td>
-          <td>
-            <div className="clearfix">
-              <div className="float-left">
-                <strong>50%</strong>
-              </div>
-              <div className="float-right">
-                <small className="text-muted">Jun 11, 2015 - Jul 10, 2015</small>
-              </div>
-            </div>
-            <CProgress className="progress-xs" color="success" value="50" />
+          <td >
+          {( camera.camera_path == "0" )? 
+          "Default WebCam 1"
+          : ( camera.camera_path == "0" )? 
+          "Default WebCam 2"
+          : camera.camera_path }
           </td>
           <td className="text-center">
-            {(camera.show)? <CIcon name="cil-check" />: <CIcon name="cil-x" /> }
+              {
+                (camera.isProcessing == true)?
+                (typeof system_monitoring.streamingFPS[idx] !== typeof undefined)?
+                system_monitoring.processingFPS[idx]:
+                "-"
+                :
+                (typeof system_monitoring.streamingFPS[idx] !== typeof undefined)?
+                system_monitoring.streamingFPS[idx]:
+                "-"
+              }
+          </td>
+          <td className="text-center">
+            {(camera.isEntryPoint)? <span style={{color:"green"}}> <CIcon name="cil-check" /> </span> :<span style={{color:"red"}}> <CIcon name="cil-x" /></span> }
+          </td>
+          <td className="text-center">
+            {(camera.isProcessing)? <span style={{color:"green"}}> <CIcon name="cil-check" /> </span> :<span style={{color:"red"}}> <CIcon name="cil-x" /></span> }
           </td>
           <td className="text-center" >
           <CButton 
           block shape="pill" 
           color="info"
+          disabled = {false}
           onClick = {
             ()=> {onView(idx)}
           }
@@ -356,6 +242,60 @@ const Dashboard = () => {
     </table>
 
     <br />
+    <CCardGroup columns className = "cols-2" >
+    <CCard>
+        <CCardHeader>
+          CPU usage
+        </CCardHeader>
+        <CCardBody>
+          <CChartDoughnut
+            datasets={[
+              {
+                backgroundColor: [
+                  '#E46651',
+                  '#41B883',
+                ],
+                data: [ system_monitoring.cpu , 100 - system_monitoring.cpu ]
+              }
+            ]}
+            labels={['CPU Usage ' + system_monitoring.cpu+"%", 'Idle']}
+            options={{
+              tooltips: {
+                enabled: true
+              }
+            }}
+          />
+        </CCardBody>
+      </CCard>
+      <CCard>
+        <CCardHeader>
+          Ram Usage
+        </CCardHeader>
+        <CCardBody>
+
+          <CChartDoughnut
+            datasets={[
+              {
+                backgroundColor: [
+                  '#E46651',
+                  '#41B883',
+                ],
+                data: [ system_monitoring.memory , 100 - system_monitoring.memory ]
+              }
+            ]}
+            labels={['Memory usage '+ system_monitoring.memory +"%", 'Idle']}
+            options={{
+              tooltips: {
+                enabled: true
+              }
+            }}
+          />
+
+        </CCardBody>
+      </CCard>
+        </CCardGroup>
+
+      <br />
 
       <CCard>
         <CCardBody>

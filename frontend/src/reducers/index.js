@@ -47,8 +47,18 @@ const cameraList = (state = [], action ) => {
 	}
 }
 
+const system_monitoring = (state = { "cpu": 0, "memory": 0, "processingFPS": [] , "streamingFPS":[] }, action) => {
+	switch(action.type){
+		case "SET":
+			return {...action.payload }
+		default:
+			return state
+	}
+}
+
 export default combineReducers({
   sidebarShow,
   currentUser,
-  cameraList
+  cameraList,
+  system_monitoring,
 })
