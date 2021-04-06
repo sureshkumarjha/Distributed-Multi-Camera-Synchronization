@@ -6,7 +6,8 @@ import {
   CDropdown,
   CDropdownMenu,
   CDropdownItem,
-  CDropdownToggle
+  CDropdownToggle,
+  CSwitch
 } from '@coreui/react'
 import CIcon from '@coreui/icons-react'
 import ChartLineSimple from '../charts/ChartLineSimple'
@@ -14,7 +15,7 @@ import ChartBarSimple from '../charts/ChartBarSimple'
 import { useSelector, useDispatch } from 'react-redux'
 
 
-const WidgetsDropdown = () => {
+const WidgetsDropdown = (props) => {
   const cameraList = useSelector(state => state.cameraList)
   // render
   return (
@@ -24,6 +25,7 @@ const WidgetsDropdown = () => {
           color="gradient-primary"
           header={cameraList.length.toString()}
           text="Total Camera"
+          style={{height: '150px'}}
           footerSlot={
             <ChartLineSimple
               pointed
@@ -53,8 +55,9 @@ const WidgetsDropdown = () => {
       <CCol sm="6" lg="3">
         <CWidgetDropdown
           color="gradient-info"
-          header="9.823"
-          text="Members online"
+          header="2"
+          text="Active Members"
+          style={{height: '150px'}}
           footerSlot={
             <ChartLineSimple
               pointed
@@ -68,78 +71,53 @@ const WidgetsDropdown = () => {
             />
           }
         >
-          <CDropdown>
-            <CDropdownToggle caret={false} color="transparent">
-              <CIcon name="cil-location-pin"/>
-            </CDropdownToggle>
-            <CDropdownMenu className="pt-0" placement="bottom-end">
-              <CDropdownItem>Action</CDropdownItem>
-              <CDropdownItem>Another action</CDropdownItem>
-              <CDropdownItem>Something else here...</CDropdownItem>
-              <CDropdownItem disabled>Disabled action</CDropdownItem>
-            </CDropdownMenu>
-          </CDropdown>
         </CWidgetDropdown>
       </CCol>
 
       <CCol sm="6" lg="3">
         <CWidgetDropdown
           color="gradient-warning"
-          header="9.823"
-          text="Members online"
+          header="Smart Sense All"
+          text="Activate Smart Sense for all cameras" 
+          style={{height: '150px'}}
           footerSlot={
-            <ChartLineSimple
-              className="mt-3"
-              style={{height: '70px'}}
-              backgroundColor="rgba(255,255,255,.2)"
-              dataPoints={[78, 81, 80, 45, 34, 12, 40]}
-              options={{ elements: { line: { borderWidth: 2.5 }}}}
-              pointHoverBackgroundColor="warning"
-              label="Members"
-              labels="months"
-            />
+          <div style={{
+            height: '70px',
+            display:"flex",
+            justifyContent:"center",
+            alignItems:"center"
+            }}>
+
+            <CSwitch className={'mx-3'} size={"lg"} variant={'3d'} color={'success'} 
+                  />
+          </div>
           }
         >
-          <CDropdown>
-            <CDropdownToggle color="transparent">
-              <CIcon name="cil-settings"/>
-            </CDropdownToggle>
-            <CDropdownMenu className="pt-0" placement="bottom-end">
-              <CDropdownItem>Action</CDropdownItem>
-              <CDropdownItem>Another action</CDropdownItem>
-              <CDropdownItem>Something else here...</CDropdownItem>
-              <CDropdownItem disabled>Disabled action</CDropdownItem>
-            </CDropdownMenu>
-          </CDropdown>
         </CWidgetDropdown>
       </CCol>
 
       <CCol sm="6" lg="3">
         <CWidgetDropdown
           color="gradient-danger"
-          header="9.823"
-          text="Members online"
+          header="Monitoring Mode"
+          text="Multiple Camera View"
+          style={{height: '150px'}}
           footerSlot={
-            <ChartBarSimple
-              className="mt-3 mx-3"
-              style={{height: '70px'}}
-              backgroundColor="rgb(250, 152, 152)"
-              label="Members"
-              labels="months"
-            />
+          <div style={{
+            height: '70px',
+            display:"flex",
+            justifyContent:"center",
+            alignItems:"center"
+            }}>
+
+            <CSwitch className={'mx-3'} size={"lg"} variant={'3d'} color={'success'} 
+                    checked = {props.monitoring} 
+                    onChange = {props.onMonitorChange}
+                  />
+          </div>
           }
         >
-          <CDropdown>
-            <CDropdownToggle caret className="text-white" color="transparent">
-              <CIcon name="cil-settings"/>
-            </CDropdownToggle>
-            <CDropdownMenu className="pt-0" placement="bottom-end">
-              <CDropdownItem>Action</CDropdownItem>
-              <CDropdownItem>Another action</CDropdownItem>
-              <CDropdownItem>Something else here...</CDropdownItem>
-              <CDropdownItem disabled>Disabled action</CDropdownItem>
-            </CDropdownMenu>
-          </CDropdown>
+
         </CWidgetDropdown>
       </CCol>
     </CRow>

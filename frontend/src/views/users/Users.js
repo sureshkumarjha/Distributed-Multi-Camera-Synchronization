@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
 import {
   CBadge,
   CCard,
@@ -12,6 +13,7 @@ import {
 } from '@coreui/react'
 
 import usersData from './UsersData'
+import empty from '../../assets/images/empty.png'
 
 const getBadge = status => {
   switch (status) {
@@ -32,22 +34,84 @@ const Users = () => {
   const pageChange = newPage => {
     currentPage !== newPage && history.push(`/users?page=${newPage}`)
   }
+  const user_data = useSelector(state => state.user_data)
 
   useEffect(() => {
     currentPage !== page && setPage(currentPage)
   }, [currentPage, page])
-
+  console.log("People ",user_data)
   return (
     <div className="flex-row">
-    <CRow className="justify-content-center"> 
-      <CCol xl={6}>
+    <CRow className="justify-content-center">
+    {
+      (Object.keys(user_data).length == 0)?
+      <div className="text-center"
+      style={{
+        width:"100%"
+      }}
+      >
+      <img 
+        src = {empty}
+        style={{
+          height:"20em",
+          width:"20em",
+          borderRadius:"100%",
+          objectFit:"cover",    
+          boxShadow: "-4px 0px 0px 0px #b9b9b9",
+        }}
+      />
+      <div className="pa3">
+      No Cameras Added
+      </div>
+      </div>
+      :
+      <>  
+      </>
+    }
+    {
+      Object.keys(user_data).map((camera_name,idx)=>{
+        return <CCol xl={12}>
         <CCard>
           <CCardHeader>
-            Users
-            <small className="text-muted"> example</small>
+            {camera_name}
           </CCardHeader>
-          <CCardBody>
-          <CDataTable
+          <CCardBody 
+          style={{
+            display:"flex",
+            flexWrap:"wrap"
+          }}
+          >
+          {
+            Object.keys(user_data[camera_name]).map((people_id,idx)=>{
+              return <div
+              className="pa3"
+              >
+              <img 
+                height = {"250px"}
+                src = {user_data[camera_name][people_id]}
+              />
+              <div  className="pa2" >
+              {people_id}
+              </div>
+              </div>
+            })
+          }
+          </CCardBody>
+        </CCard>
+      </CCol>
+      }
+      )
+    }
+      
+  
+    </CRow>
+    </div>
+  )
+}
+
+export default Users
+
+{/* <CDataTable
             items={usersData}
             fields={[
               { key: 'name', _classes: 'font-weight-bold' },
@@ -76,13 +140,4 @@ const Users = () => {
             pages={5}
             doubleArrows={false} 
             align="center"
-          />
-          </CCardBody>
-        </CCard>
-      </CCol>
-    </CRow>
-    </div>
-  )
-}
-
-export default Users
+          /> */}

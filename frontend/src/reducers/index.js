@@ -56,9 +56,19 @@ const system_monitoring = (state = { "cpu": 0, "memory": 0, "processingFPS": [] 
 	}
 }
 
+const user_data = (state = { }, action) => {
+	switch(action.type){
+		case "SET_DATA":
+			return {...action.payload }
+		default:
+			return state
+	}
+}
+
 export default combineReducers({
   sidebarShow,
   currentUser,
   cameraList,
   system_monitoring,
+  user_data
 })

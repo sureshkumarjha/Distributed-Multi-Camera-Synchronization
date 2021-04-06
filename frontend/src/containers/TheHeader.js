@@ -67,8 +67,8 @@ const TheHeader = () => {
 
       <CHeaderNav className="px-3">
         <TheHeaderDropdownNotif/>
-        <TheHeaderDropdownTasks/>
-        <TheHeaderDropdownMssg/>
+        {/* <TheHeaderDropdownTasks/>
+        <TheHeaderDropdownMssg/> */}
         <TheHeaderDropdown/>
       </CHeaderNav>
 
@@ -88,7 +88,11 @@ const TheHeader = () => {
             >
               <CIcon name="cil-graph" alt="Dashboard" />&nbsp;Dashboard
             </CLink>
-            <CLink className="c-subheader-nav-link" href="#">
+            <CLink 
+              className="c-subheader-nav-link" 
+              aria-current="page" 
+              to="/settings"
+            >
               <CIcon name="cil-settings" alt="Settings" />&nbsp;Settings
             </CLink>
           </div>

@@ -34,6 +34,26 @@ const TheContent = () => {
       dispatch({type : "SET", payload: JSON.parse(data) })
     });
 
+    socket.on("people_detected", data => {
+      data = JSON.parse(data)
+      console.log("socket data",data)
+      let activePeople = {}
+      let people;
+      let cam;
+      for(cam in data){
+        let temp = {}
+        for(people in data[cam]){
+          let decode = new Buffer(data[cam][people], "base64")
+          temp[people] = URL.createObjectURL(
+            new Blob([decode.buffer], { type: 'image/png' } /* (1) */)
+          );
+        }
+        activePeople[cam] = temp
+      }
+      console.log("People data",activePeople)
+      dispatch({type : "SET_DATA", payload: activePeople })
+    });
+
     return function cleanup() {
       socket.disconnect()
       console.log("Disconect ")

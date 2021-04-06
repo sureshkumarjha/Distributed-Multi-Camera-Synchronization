@@ -29,6 +29,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios'
 import CIcon from '@coreui/icons-react'
 import logo from '../../assets/images/logo.png'
+import empty from '../../assets/images/empty.png'
 
 const Settings = (props) => {
   const dispatch = useDispatch()
@@ -191,6 +192,7 @@ const Settings = (props) => {
   }
 
 
+
   const toasters = (()=>{
     return toasts.reduce((toasters, toast) => {
       toasters[toast.position] = toasters[toast.position] || []
@@ -201,8 +203,7 @@ const Settings = (props) => {
   console.log("Selected camera",selectedCamera)
   return (
     <div className="flex-row">
-      <CContainer>
-      
+      <CContainer>   
         <CModal 
         show={modal} 
         onClose={setModal}
@@ -353,6 +354,30 @@ const Settings = (props) => {
             </CCardHeader> */}
             <CCardBody>
               <CRow>
+              {
+                (cameraList.length == 0)?
+                <div className="text-center"
+                style={{
+                  width:"100%"
+                }}
+                >
+                <img 
+                  src = {empty}
+                  style={{
+                    height:"10em",
+                    width:"10em",
+                    borderRadius:"100%",
+                    objectFit:"cover",    
+                    boxShadow: "-4px 0px 0px 0px #b9b9b9",
+                  }}
+                />
+                <div>
+                No Cameras Added
+                </div>
+                </div>
+                :
+                <></>
+              }
                 {
                   cameraList.map((camera,idx)=>{
                     return <>
@@ -425,7 +450,7 @@ const Settings = (props) => {
                     // checked = {} 
                     onChange = {
                       ()=>{
-                        
+                       
                       }
                     }
                   />

@@ -21,6 +21,7 @@ import {
   CModalFooter,
   CForm,CFormGroup,CFormText,CInput,CLabel, CCardImg,
   CToast,CToastBody,CToastHeader,CToaster,
+  CJumbotron
 } from '@coreui/react'
 import {
   CChartPie,
@@ -31,6 +32,8 @@ import { useSelector, useDispatch } from 'react-redux'
 import axios from 'axios'
 import MainChartExample from '../charts/MainChartExample.js'
 import logo from '../../assets/images/logo.png'
+import empty from '../../assets/images/empty.png'
+import { object } from 'prop-types'
 
 
 
@@ -59,8 +62,33 @@ const Dashboard = () => {
   }
 
   const [selectedCamera ,setSelectedCamera] = useState(camera)
-
+  const [monitoring,setMonitoring] = useState(false)
   const [modal, setModal] = useState(false)
+
+
+  const onMonitorChange = () =>{
+    setMonitoring(!monitoring)
+    if(!monitoring){
+      var elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) { /* Safari */
+        elem.webkitRequestFullscreen();
+      } else if (elem.msRequestFullscreen) { /* IE11 */
+        elem.msRequestFullscreen();
+      }
+    }else{
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if (document.webkitExitFullscreen) { /* Safari */
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) { /* IE11 */
+        document.msExitFullscreen();
+      }
+    }
+  }
+
+ 
 
   const handleOnChange = event => {
     const {name , value} = event.target
@@ -96,7 +124,88 @@ const Dashboard = () => {
   console.log(cameraList,system_monitoring)
   return (
     <>
-      <WidgetsDropdown />
+
+      <WidgetsDropdown 
+        onMonitorChange = {onMonitorChange}
+        monitoring = {monitoring}
+      />
+      {
+        (monitoring)?
+        <div className="custom-modal">
+        <CCard>
+            <CCardHeader style = {{ 
+              height: "5vh",
+              display:"flex",
+              alignItems:"center",
+              justifyContent:"space-between"
+              }}>
+              Monitor Mode
+              <div className="card-header-actions flex items-center">
+              <CButton variant="outline" size = {'sm'} color="dark" onClick = {()=>{
+                onMonitorChange()
+              }}>
+              <CIcon name="cil-x" />
+              </CButton>
+              </div>
+            </CCardHeader>
+          <CCardBody style = {{
+            height: "95vh",
+            padding:"0",
+            margin:"0",
+            textAlign:"center",
+            display:"flex",
+            flexWrap:"wrap",
+            justifyContent:"center"
+            }}
+            >
+            <CRow className = "tc"
+            style = {{
+            padding:"0",
+            margin:"0",
+            textAlign:"center",
+            display:"flex",
+            flexWrap:"wrap",
+            justifyContent:"center",
+            alignItems:'center'
+            }}     
+            >
+            {
+              (cameraList.length == 0)?
+              <div>
+                No Camera Added
+              </div>
+              :
+              <>
+              {
+              cameraList.map((camera,idx)=>{
+                return <CCol lg = {6} 
+                  style={{
+                    margin:"0",
+                    padding:"0"
+                  }}
+                >
+                  <img 
+                  src={`/video_streamer/${idx}`}
+                  style={{
+                    width: "50vw",
+                    height: "50vh",
+                    objectFit:"cover"
+                  }}
+                  />
+                  </CCol>
+              })
+              }
+              </>
+            }
+            
+            </CRow>
+          </CCardBody>
+        </CCard>
+      </div>
+      :
+      <></>
+      }
+      
       {
         (modal)?
         <div className="custom-modal">
@@ -182,7 +291,30 @@ const Dashboard = () => {
         </tr>
       </thead>
       <tbody>
-      {cameraList.map((camera,idx)=>{
+      {
+        (cameraList.length == 0)?
+        <tr>
+        <td className="text-center" colSpan = {8}>
+        <img 
+          src = {empty}
+          style={{
+            height:"10em",
+            width:"10em",
+            borderRadius:"100%",
+            objectFit:"cover",    
+            boxShadow: "-4px 0px 0px 0px #b9b9b9",
+          }}
+        />
+        <div>
+        No Cameras Added
+        </div>
+        <div className="small text-muted">
+              Go to settings to Add Cameras
+            </div>
+        </td>
+        </tr>
+        :
+        cameraList.map((camera,idx)=>{
         return <tr>
           <td className="text-center">
             <div className="c-avatar">
@@ -203,7 +335,7 @@ const Dashboard = () => {
           <td >
           {( camera.camera_path == "0" )? 
           "Default WebCam 1"
-          : ( camera.camera_path == "0" )? 
+          : ( camera.camera_path == "1" )? 
           "Default WebCam 2"
           : camera.camera_path }
           </td>
@@ -326,7 +458,7 @@ const Dashboard = () => {
           </CRow>
           <MainChartExample style={{height: '300px', marginTop: '40px'}}/>
         </CCardBody>
-        <CCardFooter>
+        {/* <CCardFooter>
           <CRow className="text-center">
             <CCol md sm="12" className="mb-sm-2 mb-0">
               <div className="text-muted">Visits</div>
@@ -378,226 +510,10 @@ const Dashboard = () => {
               />
             </CCol>
           </CRow>
-        </CCardFooter>
+        </CCardFooter> */}
       </CCard>
 
-      <WidgetsBrand withCharts/>
-
-      <CRow>
-        <CCol>
-          <CCard>
-            <CCardHeader>
-              Traffic {' & '} Sales
-            </CCardHeader>
-            <CCardBody>
-              <CRow>
-                <CCol xs="12" md="6" xl="6">
-
-                  <CRow>
-                    <CCol sm="6">
-                      <CCallout color="info">
-                        <small className="text-muted">New Clients</small>
-                        <br />
-                        <strong className="h4">9,123</strong>
-                      </CCallout>
-                    </CCol>
-                    <CCol sm="6">
-                      <CCallout color="danger">
-                        <small className="text-muted">Recurring Clients</small>
-                        <br />
-                        <strong className="h4">22,643</strong>
-                      </CCallout>
-                    </CCol>
-                  </CRow>
-
-                  <hr className="mt-0" />
-
-                  <div className="progress-group mb-4">
-                    <div className="progress-group-prepend">
-                      <span className="progress-group-text">
-                        Monday
-                      </span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="info" value="34" />
-                      <CProgress className="progress-xs" color="danger" value="78" />
-                    </div>
-                  </div>
-                  <div className="progress-group mb-4">
-                    <div className="progress-group-prepend">
-                      <span className="progress-group-text">
-                      Tuesday
-                      </span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="info" value="56" />
-                      <CProgress className="progress-xs" color="danger" value="94" />
-                    </div>
-                  </div>
-                  <div className="progress-group mb-4">
-                    <div className="progress-group-prepend">
-                      <span className="progress-group-text">
-                      Wednesday
-                      </span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="info" value="12" />
-                      <CProgress className="progress-xs" color="danger" value="67" />
-                    </div>
-                  </div>
-                  <div className="progress-group mb-4">
-                    <div className="progress-group-prepend">
-                      <span className="progress-group-text">
-                      Thursday
-                      </span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="info" value="43" />
-                      <CProgress className="progress-xs" color="danger" value="91" />
-                    </div>
-                  </div>
-                  <div className="progress-group mb-4">
-                    <div className="progress-group-prepend">
-                      <span className="progress-group-text">
-                      Friday
-                      </span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="info" value="22" />
-                      <CProgress className="progress-xs" color="danger" value="73" />
-                    </div>
-                  </div>
-                  <div className="progress-group mb-4">
-                    <div className="progress-group-prepend">
-                      <span className="progress-group-text">
-                      Saturday
-                      </span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="info" value="53" />
-                      <CProgress className="progress-xs" color="danger" value="82" />
-                    </div>
-                  </div>
-                  <div className="progress-group mb-4">
-                    <div className="progress-group-prepend">
-                      <span className="progress-group-text">
-                      Sunday
-                      </span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="info" value="9" />
-                      <CProgress className="progress-xs" color="danger" value="69" />
-                    </div>
-                  </div>
-                  <div className="legend text-center">
-                    <small>
-                      <sup className="px-1"><CBadge shape="pill" color="info">&nbsp;</CBadge></sup>
-                      New clients
-                      &nbsp;
-                      <sup className="px-1"><CBadge shape="pill" color="danger">&nbsp;</CBadge></sup>
-                      Recurring clients
-                    </small>
-                  </div>
-                </CCol>
-
-                <CCol xs="12" md="6" xl="6">
-
-                  <CRow>
-                    <CCol sm="6">
-                      <CCallout color="warning">
-                        <small className="text-muted">Pageviews</small>
-                        <br />
-                        <strong className="h4">78,623</strong>
-                      </CCallout>
-                    </CCol>
-                    <CCol sm="6">
-                      <CCallout color="success">
-                        <small className="text-muted">Organic</small>
-                        <br />
-                        <strong className="h4">49,123</strong>
-                      </CCallout>
-                    </CCol>
-                  </CRow>
-
-                  <hr className="mt-0" />
-
-                  <div className="progress-group mb-4">
-                    <div className="progress-group-header">
-                      <CIcon className="progress-group-icon" name="cil-user" />
-                      <span className="title">Male</span>
-                      <span className="ml-auto font-weight-bold">43%</span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="warning" value="43" />
-                    </div>
-                  </div>
-                  <div className="progress-group mb-5">
-                    <div className="progress-group-header">
-                      <CIcon className="progress-group-icon" name="cil-user-female" />
-                      <span className="title">Female</span>
-                      <span className="ml-auto font-weight-bold">37%</span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="warning" value="37" />
-                    </div>
-                  </div>
-                  <div className="progress-group">
-                    <div className="progress-group-header">
-                      <CIcon className="progress-group-icon" name="cil-globe-alt" />
-                      <span className="title">Organic Search</span>
-                      <span className="ml-auto font-weight-bold">191,235 <span className="text-muted small">(56%)</span></span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="success" value="56" />
-                    </div>
-                  </div>
-
-
-                  <div className="progress-group">
-                    <div className="progress-group-header">
-                      <CIcon name="cib-facebook" className="progress-group-icon" />
-                      <span className="title">Facebook</span>
-                      <span className="ml-auto font-weight-bold">51,223 <span className="text-muted small">(15%)</span></span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="success" value="15" />
-                    </div>
-                  </div>
-                  <div className="progress-group">
-                    <div className="progress-group-header">
-                      <CIcon name="cib-twitter" className="progress-group-icon" />
-                      <span className="title">Twitter</span>
-                      <span className="ml-auto font-weight-bold">37,564 <span className="text-muted small">(11%)</span></span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="success" value="11" />
-                    </div>
-                  </div>
-                  <div className="progress-group">
-                    <div className="progress-group-header">
-                      <CIcon name="cib-linkedin" className="progress-group-icon" />
-                      <span className="title">LinkedIn</span>
-                      <span className="ml-auto font-weight-bold">27,319 <span className="text-muted small">(8%)</span></span>
-                    </div>
-                    <div className="progress-group-bars">
-                      <CProgress className="progress-xs" color="success" value="8" />
-                    </div>
-                  </div>
-                  <div className="divider text-center">
-                    <CButton color="link" size="sm" className="text-muted">
-                      <CIcon name="cil-options" />
-                    </CButton>
-                  </div>
-
-                </CCol>
-              </CRow>
-
-
-
-            </CCardBody>
-          </CCard>
-        </CCol>
-      </CRow>
+      {/* <WidgetsBrand withCharts/> */}
     </>
   )
 }
