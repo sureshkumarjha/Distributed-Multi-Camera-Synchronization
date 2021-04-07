@@ -14,6 +14,7 @@ import sys
 import cv2
 from flask_cors import CORS
 import psutil
+import base64
 
 LOG_FILE = 'logs/WebApp.log'
 
@@ -156,7 +157,7 @@ def home():
 
 @app.route('/test')
 def test():
-    return {'time': time.time()}
+    return json.dumps({"image": base64.b64encode(HomeSurveillance.cameras[0].read_jpg()).decode('ascii')})
 
 @app.before_request
 def before_request():
@@ -404,19 +405,25 @@ def get_faceimgs(name):
 def update_faces():
     """Used to push all detected faces to client"""
     while True:
-        peopledata = []
+        
         persondict = {}
-        thumbnail = None
+        camdata= {}
         with HomeSurveillance.camerasLock :
             for i, camera in enumerate(HomeSurveillance.cameras):
-                with HomeSurveillance.cameras[i].peopleDictLock:
-                    for key, person in camera.people.iteritems():  
-                        persondict = {'identity': key , 'confidence': person.confidence, 'camera': i, 'timeD':person.time, 'prediction': person.identity,'thumbnailNum': len(person.thumbnails)}
-                        app.logger.info(persondict)
-                        peopledata.append(persondict)
-
-        socketio.emit('people_detected', json.dumps(peopledata) ,namespace='/surveillance')
-        time.sleep(4)
+                    peopledata = {}
+                    for key in camera.people:  
+                        if  camera.people[key] is not None:
+                            try:
+                                ret, jpeg = cv2.imencode('.jpg', camera.people[key])
+                                if ret:
+                                    imgEncode = base64.b64encode(jpeg).decode('ascii')
+                                    peopledata[key] = imgEncode
+                            except:
+                                print("Error Camera Thread")
+                    camdata[camera.camInfo.get('camera_name')] = peopledata
+        # print(camdata.keys())
+        socketio.emit('people_detected', json.dumps(camdata) ,namespace='/surveillance')
+        time.sleep(10)
 
 def alarm_state():
      """Used to push alarm state to client"""
@@ -461,11 +468,11 @@ def connect():
     #     alarmStateThread = threading.Thread(name='alarmstate_process_thread_',target= alarm_state, args=())
     #     alarmStateThread.start()
    
-    # if not facesUpdateThread.isAlive():
-    #     #print "Starting facesUpdateThread"
-    #     app.logger.info("Starting facesUpdateThread")
-    #     facesUpdateThread = threading.Thread(name='websocket_process_thread_',target= update_faces, args=())
-    #     facesUpdateThread.start()
+    if not facesUpdateThread.isAlive():
+        #print "Starting facesUpdateThread"
+        app.logger.info("Starting facesUpdateThread")
+        facesUpdateThread = threading.Thread(name='websocket_process_thread_',target= update_faces, args=())
+        facesUpdateThread.start()
 
     if not monitoringThread.isAlive():
         #print "Starting monitoringThread"
