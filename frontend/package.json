@@ -45,7 +45,8 @@
     "react-router-dom": "^5.2.0",
     "redux": "4.0.5",
     "socket.io-client": "^4.0.1",
-    "tachyons": "^4.12.0"
+    "tachyons": "^4.12.0",
+    "vanta": "^0.5.21"
   },
   "devDependencies": {
     "auto-changelog": "~2.2.1",

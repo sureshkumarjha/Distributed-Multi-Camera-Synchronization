@@ -69,6 +69,7 @@ const Dashboard = () => {
   const onMonitorChange = () =>{
     setMonitoring(!monitoring)
     if(!monitoring){
+      document.getElementsByTagName("body")[0].style.overflow = "hidden";
       var elem = document.documentElement;
       if (elem.requestFullscreen) {
         elem.requestFullscreen();
@@ -78,14 +79,19 @@ const Dashboard = () => {
         elem.msRequestFullscreen();
       }
     }else{
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) { /* Safari */
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) { /* IE11 */
-        document.msExitFullscreen();
+      document.getElementsByTagName("body")[0].style.overflow = "auto";
+      try{
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) { /* Safari */
+          document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { /* IE11 */
+          document.msExitFullscreen();
+        }
+      }catch(e){
+        console.log("ERR")
       }
-    }
+  }
   }
 
  
@@ -132,18 +138,29 @@ const Dashboard = () => {
       {
         (monitoring)?
         <div className="custom-modal">
-        <CCard>
+        <CCard
+        style={{
+          background:"black"
+        }}
+        >
             <CCardHeader style = {{ 
               height: "5vh",
               display:"flex",
               alignItems:"center",
-              justifyContent:"space-between"
+              justifyContent:"space-between",
+              background:"black",
+              color:"white",
               }}>
               Monitor Mode
               <div className="card-header-actions flex items-center">
               <CButton variant="outline" size = {'sm'} color="dark" onClick = {()=>{
                 onMonitorChange()
-              }}>
+              }}
+              style={{
+                background:"white",
+                color:"red"
+              }}
+              >
               <CIcon name="cil-x" />
               </CButton>
               </div>
@@ -155,7 +172,8 @@ const Dashboard = () => {
             textAlign:"center",
             display:"flex",
             flexWrap:"wrap",
-            justifyContent:"center"
+            justifyContent:"center",
+            background:"black",
             }}
             >
             <CRow className = "tc"
@@ -187,7 +205,7 @@ const Dashboard = () => {
                   <img 
                   src={`/video_streamer/${idx}`}
                   style={{
-                    width: "50vw",
+                    width: "100vw",
                     height: "50vh",
                     objectFit:"cover"
                   }}

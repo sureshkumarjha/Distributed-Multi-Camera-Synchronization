@@ -1,4 +1,4 @@
-import React, { useState , useEffect   } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import {
   CButton,
@@ -20,8 +20,9 @@ import {
 import { useSelector, useDispatch} from 'react-redux'
 import {loginAction} from '../../../actions'
 import CIcon from '@coreui/icons-react'
-import logo from '../../../assets/images/logo.png'
-
+import logo from '../../../assets/images/undraw1.png'
+import bg from '../../../assets/images/bg-2.jpg'
+import NET from 'vanta/dist/vanta.halo.min'
 import axios from 'axios'
 
 
@@ -69,6 +70,8 @@ const Login = (props) => {
       
     }
   }
+  const [vantaEffect, setVantaEffect] = useState(0)
+  const myRef = useRef(null)
   useEffect(()=>{
     console.log(localStorage.getItem('rememberMe'))
     if(localStorage.getItem('rememberMe') === 'true'){
@@ -92,12 +95,34 @@ const Login = (props) => {
         console.log(error);
       })
     }
-  },[])
+
+    if (!vantaEffect) {
+      setVantaEffect(NET({
+        el: myRef.current,
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200.00,
+        minWidth: 200.00,
+        amplitudeFactor: 2.10,
+        xOffset: 0.30,
+        size: 1.80
+      }))
+    }
+    return () => {
+      if (vantaEffect) vantaEffect.destroy()
+    }
+  },[vantaEffect])
 
   return (
-    <div className="c-app c-default-layout flex-row align-items-center">
-      <CContainer>
-        <CRow className="justify-content-center">
+    <div className="c-app c-default-layout flex-row align-items-center"
+    // style={{
+    //   background:`url("${bg}")`
+    // }}
+    ref={myRef}
+    >
+
+        <CRow className="ml-5">
           <CCol md="8">
             <CCardGroup>
               <CCard className="p-4">
@@ -166,7 +191,7 @@ const Login = (props) => {
                   </CForm>
                 </CCardBody>
               </CCard>
-              <CCard className="text-white bg-primary py-5 d-md-down-none" style={{ width: '44%' }}>
+              <CCard className="text-white bg-white py-5 d-md-down-none" style={{ width: '44%' }}>
                 <CCardBody className="text-center">
                   <div>
                   <img src={logo}/>
@@ -176,7 +201,7 @@ const Login = (props) => {
             </CCardGroup>
           </CCol>
         </CRow>
-      </CContainer>
+
     </div>
   )
 }

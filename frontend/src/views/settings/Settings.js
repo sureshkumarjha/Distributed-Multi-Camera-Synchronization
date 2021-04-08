@@ -413,9 +413,14 @@ const Settings = (props) => {
                           </div>
 
                         </CCardHeader>
-                        <CCardBody>
+                        <CCardBody
+                        className="tc ma1"
+                        >
 
-                          <img src={`/video_streamer/${idx.toString()}`} />
+                          <img 
+                          src={`/video_streamer/${idx.toString()}`} 
+                          height={"400px"}
+                          />
 
                         </CCardBody>
                       </CCard>

@@ -10,6 +10,8 @@ import { useSelector, useDispatch } from 'react-redux'
 // routes config
 import routes from '../routes'
 
+import bg from '../assets/images/bg-4.jpg'
+
 const ENDPOINT = "http://localhost:5000/surveillance";
   
 const loading = (
@@ -60,7 +62,13 @@ const TheContent = () => {
     };
   },[])
   return (
-    <main className="c-main">
+    <main className="c-main"
+    // style={{
+    //   background:`linear-gradient(to right, rgba(106, 114, 133,.3), rgba(255,255,255,.3)) ,url("${bg}") no-repeat`,
+    //   backgroundAttachment:"fixed",
+    //   backgroundSize:"cover"
+    // }}
+    >
       <CContainer fluid>
         <Suspense fallback={loading}>
           <Switch>
